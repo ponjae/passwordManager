@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -30,22 +31,63 @@ def save():
     website = website_entry.get()
     email = user_entry.get()
     pw = password_entry.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": pw
+        }
+    }
 
     if len(website) == 0 or len(pw) == 0 or len(email) == 0:
         messagebox.showinfo(title="Oups",
                             message="Please don't leave any field empty!")
     else:
-        is_ok = messagebox.askokcancel(
-            title=website, message=f"Do you want to add the following details? \nEmail/username: {email} \nPassword: {pw}")
+        try:
+            with open("data.json", "r") as file:
+                # Read old data
+                data = json.load(file)
 
-        if is_ok:
-            with open("data.txt", "a") as file:
-                file.write(f"{website} || {email} || {pw}\n")
+        except FileNotFoundError:
+            with open("data.json", "w") as file:
+                json.dump(new_data, file, indent=4)
 
+        else:
+            # Update old data with new data
+            data.update(new_data)
+            with open("data.json", "w") as file:
+                # Save updated data
+                json.dump(data, file, indent=4)
+
+        finally:
             website_entry.delete(0, END)
             password_entry.delete(0, END)
 
-    # ---------------------------- UI SETUP ------------------------------- #
+# ---------------------------- FIND CREDENTIALS ------------------------------- #
+
+
+def find_credentials():
+    try:
+        with open("data.json", "r") as file:
+            data = json.load(file)
+
+    except FileNotFoundError:
+        messagebox.showinfo(title="Information", message="No Data File Found")
+
+    else:
+        website = website_entry.get()
+        try:
+            credentials = data[website]
+
+        except KeyError:
+            messagebox.showinfo(title="Information",
+                                message=f"No details for the {website} exists")
+        else:
+            email = credentials["email"]
+            pw = credentials["password"]
+            messagebox.showinfo(
+                title="Credentials", message=f"Username/Email: {email} \nPassword: {pw}")
+
+# ---------------------------- UI SETUP ------------------------------- #
 
 
 window = Tk()
@@ -72,7 +114,7 @@ password_label.grid(row=3, column=0)
 
 # Entries
 website_entry = Entry()
-website_entry.grid(row=1, column=1, columnspan=2, sticky="EW")
+website_entry.grid(row=1, column=1, sticky="EW")
 website_entry.focus()
 
 user_entry = Entry()
@@ -88,6 +130,9 @@ generate_button.grid(row=3, column=2, sticky="EW")
 
 add_button = Button(width=35, text="Add", command=save)
 add_button.grid(row=4, column=1, columnspan=2, sticky="EW")
+
+search_button = Button(text="Search", command=find_credentials)
+search_button.grid(row=1, column=2, sticky="EW")
 
 
 window.mainloop()
