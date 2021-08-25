@@ -1,3 +1,4 @@
+from os import PRIO_USER
 from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
@@ -28,39 +29,60 @@ def generate_pw():
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 
 def save():
+
+    exists = check_existing()
     website = website_entry.get()
     email = user_entry.get()
     pw = password_entry.get()
+    choice = True
     new_data = {
         website: {
             "email": email,
             "password": pw
         }
     }
+    if exists:
+        choice = messagebox.askyesno(
+            title="Website exists!", message=f"Credentials for {website} already exists. Are you sure you want to overwrite it?")
 
-    if len(website) == 0 or len(pw) == 0 or len(email) == 0:
-        messagebox.showinfo(title="Oups",
-                            message="Please don't leave any field empty!")
-    else:
-        try:
-            with open("data.json", "r") as file:
-                # Read old data
-                data = json.load(file)
-
-        except FileNotFoundError:
-            with open("data.json", "w") as file:
-                json.dump(new_data, file, indent=4)
-
+    if choice:
+        if len(website) == 0 or len(pw) == 0 or len(email) == 0:
+            messagebox.showinfo(title="Oups",
+                                message="Please don't leave any field empty!")
         else:
-            # Update old data with new data
-            data.update(new_data)
-            with open("data.json", "w") as file:
-                # Save updated data
-                json.dump(data, file, indent=4)
+            try:
+                with open("data.json", "r") as file:
+                    # Read old data
+                    data = json.load(file)
 
-        finally:
-            website_entry.delete(0, END)
-            password_entry.delete(0, END)
+            except FileNotFoundError:
+                with open("data.json", "w") as file:
+                    json.dump(new_data, file, indent=4)
+
+            else:
+                # Update old data with new data
+                data.update(new_data)
+                with open("data.json", "w") as file:
+                    # Save updated data
+                    json.dump(data, file, indent=4)
+
+            finally:
+                website_entry.delete(0, END)
+                password_entry.delete(0, END)
+
+# ---------------------------- CHECK IF ALREADY EXISTING ------------------------------- #
+
+
+def check_existing():
+    website = website_entry.get()
+    try:
+        with open("data.json", "r") as file:
+            # Read old data
+            data = json.load(file)
+    except FileNotFoundError:
+        return False
+    else:
+        return website in data.keys()
 
 # ---------------------------- FIND CREDENTIALS ------------------------------- #
 
